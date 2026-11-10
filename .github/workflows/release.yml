@@ -1,0 +1,42 @@
+name: release
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "release"
+  cancel-in-progress: true
+
+jobs:
+  release:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Emscripten SDK
+        uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: "latest"
+
+      - name: Build WebAssembly with CMake
+        run: |
+          cmake -B cmake-build-web -DWEB=ON
+          cmake --build cmake-build-web -j
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
